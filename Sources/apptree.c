@@ -201,7 +201,7 @@ static void apptree_print_frame(void)
 	
 	if (control.picture_size <= FRAME_HEIGHT) {
 		for (i = start; i < control.picture_size; i++)
-			printf("%s\r\n", control.picture[i]);
+			printf("%2d.%s\r\n", i+1, control.picture[i]);
 		
 		for (j = i; j < FRAME_HEIGHT; j++)
 			printf("\r\n");
@@ -209,7 +209,7 @@ static void apptree_print_frame(void)
 		end = control.frame_pos + FRAME_HEIGHT;
 		
 		for (i = start; i < end; i++)
-			printf("%s\r\n", control.picture[i]);
+			printf("%2d.%s\r\n", i+1, control.picture[i]);
 	}
 }
 
