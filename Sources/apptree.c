@@ -340,7 +340,7 @@ int apptree_handle_up_input(void)
 	if (!control.enabled)
 		return -1;
 	
-	apptree_increase_select_pos();
+	apptree_decrease_select_pos();
 	apptree_adjust_frame_pos();
 	apptree_print_menu();
 	
@@ -355,7 +355,7 @@ int apptree_handle_down_input(void)
 	if (!control.enabled)
 		return -1;
 	
-	apptree_decrease_select_pos();
+	apptree_increase_select_pos();
 	apptree_adjust_frame_pos();
 	apptree_print_menu();
 	
