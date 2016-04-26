@@ -195,7 +195,13 @@ int apptree_init(struct apptree_node **master, char *title)
  */
 static void apptree_print_info(void)
 {
-	printf("info\r\n");
+	struct list_head *head;
+	struct apptree_node *node;
+
+	head = list_travese_to_index(&control.current->list_parent, control.select_pos);
+	node = container_of(head, struct apptree_node, list_child);
+	
+	printf("< %s >\r\n", node->info);
 }
 
 /** @brief prints the select arrow
