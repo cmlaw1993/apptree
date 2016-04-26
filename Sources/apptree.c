@@ -17,6 +17,7 @@ static void apptree_print_info(void);
 static void apptree_print_frame(void);
 static void apptree_print_title(void);
 static void apptree_print_blank(void);
+static void apptree_print_select(int index);
 static void apptree_print_menu(void);
 
 /* Initialize control structure */
@@ -26,6 +27,7 @@ static struct apptree_control control = {
 	NULL,		/* picture */
 	0,			/* picture_size */
 	0,			/* frame_pos */
+	0,			/* select_pos */
 	false		/* enabled */
 };
 
@@ -192,6 +194,19 @@ static void apptree_print_info(void)
 	printf("info\r\n");
 }
 
+/** @brief prints the select arrow
+ *	@index Index of the item in the picture.
+ *
+ *	@note This function should only be called by apptree_print_menu.
+ */
+static void apptree_print_select(int index)
+{
+	if (index == control.select_pos)
+		printf("-> ");
+	else
+		printf("   ");
+}
+
 /** @brief Prints a frame
  */
 static void apptree_print_frame(void)
@@ -200,16 +215,22 @@ static void apptree_print_frame(void)
 	int i, j;
 	
 	if (control.picture_size <= FRAME_HEIGHT) {
-		for (i = start; i < control.picture_size; i++)
-			printf("%2d.%s\r\n", i+1, control.picture[i]);
 		
+		for (i = start; i < control.picture_size; i++) {
+			apptree_print_select(i);
+			printf("%2d.%s\r\n", i+1, control.picture[i]);
+		}
+
 		for (j = i; j < FRAME_HEIGHT; j++)
 			printf("\r\n");
 	} else {
 		end = control.frame_pos + FRAME_HEIGHT;
 		
 		for (i = start; i < end; i++)
+		{
+			apptree_print_select(i);
 			printf("%2d.%s\r\n", i+1, control.picture[i]);
+		}
 	}
 }
 

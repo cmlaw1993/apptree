@@ -46,7 +46,9 @@ struct apptree_control {
 	
 	char **picture;
 	int picture_size;
+	
 	int frame_pos;
+	int select_pos;
 	
 	bool enabled;
 };
