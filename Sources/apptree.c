@@ -67,7 +67,7 @@ static int apptree_resize_picture(void)
 {	
 	char **temp;
 	
-	temp = realloc(control.picture, control.picture_size * sizeof(char **));
+	temp = realloc(control.picture, control.picture_height * sizeof(char **));
 	if (temp == NULL)
 		return -1;
 	
@@ -185,7 +185,7 @@ int apptree_init(struct apptree_node **master, char *title)
 	control.current	= *master;
 	
 	control.frame_pos = 0;
-	control.picture_size = 0;
+	control.picture_height = 0;
 	control.enabled = false;
 	
 	return 0;
@@ -218,9 +218,9 @@ static void apptree_print_frame(void)
 	int end, start = control.frame_pos;
 	int i, j;
 	
-	if (control.picture_size <= FRAME_HEIGHT) {
+	if (control.picture_height <= FRAME_HEIGHT) {
 		
-		for (i = start; i < control.picture_size; i++) {
+		for (i = start; i < control.picture_height; i++) {
 			apptree_print_select(i);
 			printf("%2d.%s\r\n", i+1, control.picture[i]);
 		}
@@ -276,7 +276,7 @@ int apptree_enable(void)
 		return -1;
 	
 	control.current = control.master;
-	control.picture_size = control.master->num_child;
+	control.picture_height = control.master->num_child;
 	
 	control.enabled = true;
 	
@@ -297,8 +297,8 @@ static void apptree_adjust_frame_pos(void)
 {
 	if (control.select_pos == 0) {
 		control.frame_pos = 0;
-	} else if (control.select_pos == (control.picture_size - 1)) {
-		control.frame_pos = control.picture_size - FRAME_HEIGHT;
+	} else if (control.select_pos == (control.picture_height - 1)) {
+		control.frame_pos = control.picture_height - FRAME_HEIGHT;
 	} else if (control.select_pos >= (control.frame_pos + FRAME_HEIGHT)) {
 		control.frame_pos++;
 	} else if (control.select_pos < control.frame_pos) {
@@ -313,7 +313,7 @@ static void apptree_adjust_frame_pos(void)
  */
 static void apptree_increase_select_pos(void)
 {
-	if (control.select_pos == (control.picture_size-1))
+	if (control.select_pos == (control.picture_height - 1))
 		control.select_pos = 0;
 	else
 		control.select_pos++;
@@ -327,7 +327,7 @@ static void apptree_increase_select_pos(void)
 static void apptree_decrease_select_pos(void)
 {
 	if (control.select_pos == 0)
-		control.select_pos = control.picture_size - 1;
+		control.select_pos = control.picture_height - 1;
 	else
 		control.select_pos--;
 }

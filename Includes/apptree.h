@@ -45,7 +45,7 @@ struct apptree_control {
 	struct apptree_node *current;
 	
 	char **picture;
-	int picture_size;
+	int picture_height;
 	
 	int frame_pos;
 	int select_pos;
