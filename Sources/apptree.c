@@ -239,7 +239,7 @@ static void apptree_print_frame(void)
 		for (i = start; i < end; i++)
 		{
 			apptree_print_select(i);
-			printf("%2d.%s\r\n", i+1, control.picture[i]);
+			printf("%2d. %s\r\n", i+1, control.picture[i]);
 		}
 	}
 }
