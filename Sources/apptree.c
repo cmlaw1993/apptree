@@ -20,6 +20,10 @@ static void apptree_print_blank(void);
 static void apptree_print_select(int index);
 static void apptree_print_menu(void);
 
+static void apptree_adjust_frame_pos(void);
+static void apptree_increase_select_pos(void);
+static void apptree_decrease_select_pos(void);
+
 /* Initialize control structure */
 static struct apptree_control control = {
 	NULL,		/* master */
@@ -278,6 +282,81 @@ int apptree_enable(void)
 	
 	apptree_resize_picture();
 	apptree_populate_picture();
+	apptree_print_menu();
+	
+	return 0;
+}
+
+/** @brief Adjust the vslue of frame_pos
+ *	
+ *	The value of frame_pos is adjusted based on the value of select_pos.
+ *	Therefore, this function is called after every update to the value of
+ *	select_pos.
+ */
+static void apptree_adjust_frame_pos(void)
+{
+	if (control.select_pos == 0) {
+		control.frame_pos = 0;
+	} else if (control.select_pos == (control.picture_size - 1)) {
+		control.frame_pos = control.picture_size - FRAME_HEIGHT;
+	} else if (control.select_pos >= (control.frame_pos + FRAME_HEIGHT)) {
+		control.frame_pos++;
+	} else if (control.select_pos < control.frame_pos) {
+		control.frame_pos--;
+	}
+}
+
+/** @breif Increase the value of select_pos
+ *
+ *	This function increases the value of select_pos and also helps to reposition
+ *	it should the value reach the end of the picture_length.
+ */
+static void apptree_increase_select_pos(void)
+{
+	if (control.select_pos == (control.picture_size-1))
+		control.select_pos = 0;
+	else
+		control.select_pos++;
+}
+
+/** @breif Decreases the value of select_pos
+ *
+ *	This function decreases the value of select_pos and also helps to reposition
+ *	it should the value reach the end of the picture_length.
+ */
+static void apptree_decrease_select_pos(void)
+{
+	if (control.select_pos == 0)
+		control.select_pos = control.picture_size - 1;
+	else
+		control.select_pos--;
+}
+
+/** @brief Handles an "up" input
+ *	@returns 0 if successful and -1 if otherwise.
+ */
+int apptree_handle_up_input(void)
+{
+	if (!control.enabled)
+		return -1;
+	
+	apptree_increase_select_pos();
+	apptree_adjust_frame_pos();
+	apptree_print_menu();
+	
+	return 0;
+}
+
+/** @brief Handles a "down" input
+ *	@returns 0 if successful and -1 if otherwise.
+ */
+int apptree_handle_down_input(void)
+{
+	if (!control.enabled)
+		return -1;
+	
+	apptree_decrease_select_pos();
+	apptree_adjust_frame_pos();
 	apptree_print_menu();
 	
 	return 0;

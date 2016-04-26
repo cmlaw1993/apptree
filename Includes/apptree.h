@@ -61,5 +61,8 @@ int apptree_create_node(struct apptree_node **new_node,
 int apptree_init(struct apptree_node **master, char *title);
 							
 int apptree_enable(void);
+							
+int apptree_handle_up_input(void);
+int apptree_handle_down_input(void);
 									
 #endif	/* APPTREE_H */
