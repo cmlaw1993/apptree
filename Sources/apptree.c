@@ -196,18 +196,19 @@ static void apptree_print_info(void)
  */
 static void apptree_print_frame(void)
 {
+	int end, start = control.frame_pos;
 	int i, j;
 	
-	if (control.picture_size <= FRAME_HEIGHT)
-	{
-		for (i = 0; i < control.picture_size; i++)
+	if (control.picture_size <= FRAME_HEIGHT) {
+		for (i = start; i < control.picture_size; i++)
 			printf("%s\r\n", control.picture[i]);
 		
 		for (j = i; j < FRAME_HEIGHT; j++)
 			printf("\r\n");
-	}
-	else {
-		for (i = 0; i < FRAME_HEIGHT; i++)
+	} else {
+		end = control.frame_pos + FRAME_HEIGHT;
+		
+		for (i = start; i < end; i++)
 			printf("%s\r\n", control.picture[i]);
 	}
 }
