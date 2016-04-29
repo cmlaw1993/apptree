@@ -26,6 +26,8 @@ static void apptree_adjust_frame_pos(void);
 static void apptree_increase_select_pos(void);
 static void apptree_decrease_select_pos(void);
 
+static void apptree_handle_select_input(void);
+
 /* Initialize control structure */
 static struct apptree_control control = {
 	NULL,		/* master */
@@ -405,6 +407,32 @@ int apptree_handle_down_input(void)
 	return 0;
 }
 
+/** @brief Handles a "select" input
+ */
+static void apptree_handle_select_input(void)
+{
+	struct list_head *head;
+	struct apptree_node *child;
+	
+	head = list_travese_to_index(&control.current->list_parent, control.select_pos);
+	child = container_of(head, struct apptree_node, list_child);
+
+	if (child->num_child > 0) {	
+		control.current = child;
+		
+		control.picture_height = control.current->num_child;
+		control.frame_pos = 0;
+		control.select_pos = 0;
+		
+		apptree_resize_picture();
+		apptree_populate_picture();
+		apptree_print_menu();
+	} else {
+		child->function();
+		apptree_print_menu();
+	}
+}
+
 /** @brief Handles user input
  *	@returns 0 if a new input is detected and -1 if otherwise.
  *
@@ -422,6 +450,8 @@ int apptree_handle_input(void)
 		apptree_handle_up_input();
 	} else if (input == control.keys->down) {
 		apptree_handle_down_input();
+	} else if (input == control.keys->select) {
+		apptree_handle_select_input();
 	}
 	
 	return 0;
