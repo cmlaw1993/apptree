@@ -17,7 +17,7 @@
 #define TERMINAL_HEIGHT					24
 #define TERMINAL_WIDTH					80
 
-#define FRAME_HEIGHT					19
+#define FRAME_HEIGHT					18
 #define FRAME_WIDTH						80
 
 #define MAX_TITLE_WIDTH					74

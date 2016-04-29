@@ -15,6 +15,7 @@ static int apptree_bind_readinput(int (*func)(char *input));
 static int apptree_validate_node(struct apptree_node *block);
 static int apptree_create_master(struct apptree_node **master, char *title);
 
+static void apptree_print_keybindings(void);
 static void apptree_print_info(void);
 static void apptree_print_frame(void);
 static void apptree_print_title(void);
@@ -231,6 +232,16 @@ int apptree_init(struct apptree_node **master,
 	return 0;
 }
 
+/** @brief Prints keybindings
+ *	@note This function should only be called by apptree_print_menu.
+ */
+static void apptree_print_keybindings(void)
+{
+	printf("KEY BINDINGS => UP:[%c]  DOWN:[%c]  SELECT:[%c]  BACK:[%c]  HOME:[%c]\r\n",
+		control.keys->up, control.keys->down, control.keys->select,
+		control.keys->back, control.keys->home);
+}
+
 /** @brief Prints the info of a pointed item
  */
 static void apptree_print_info(void)
@@ -308,6 +319,7 @@ static void apptree_print_menu(void)
 	apptree_print_frame();
 	apptree_print_blank();
 	apptree_print_info();
+	apptree_print_keybindings();
 }
 
 /** @brief Enables the apptree
@@ -457,6 +469,8 @@ static void apptree_handle_back_input(void)
 	apptree_print_menu();
 }
 
+/** @brief Handles a "home" input.
+ */
 static void apptree_handle_home_input(void)
 {
 	if (control.current == control.master)
