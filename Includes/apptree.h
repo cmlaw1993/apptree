@@ -39,6 +39,14 @@ struct apptree_node {
 	void (*function)(void);
 };
 
+struct apptree_keybindings {
+	char up;
+	char down;
+	char select;
+	char back;
+	char home;
+};
+
 /** Keeps track of the current tree */
 struct apptree_control {
 	struct apptree_node *master;
@@ -51,6 +59,8 @@ struct apptree_control {
 	int select_pos;
 	
 	bool enabled;
+	
+	struct apptree_keybindings *keys;
 };
 
 int apptree_create_node(struct apptree_node **new_node,
@@ -58,7 +68,9 @@ int apptree_create_node(struct apptree_node **new_node,
 							char *title,
 							char *info,
 							void (*function)(void));
-int apptree_init(struct apptree_node **master, char *title);
+int apptree_init(struct apptree_node **master,
+					char *title,
+					struct apptree_keybindings *key);
 							
 int apptree_enable(void);
 							
