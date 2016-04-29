@@ -11,6 +11,7 @@ static void apptree_populate_picture(void);
 static int apptree_resize_picture(void);
 
 static void apptree_bind_keys(struct apptree_keybindings *key);
+static int apptree_bind_readinput(int (*func)(char *input));
 static int apptree_validate_node(struct apptree_node *block);
 static int apptree_create_master(struct apptree_node **master, char *title);
 
@@ -34,7 +35,8 @@ static struct apptree_control control = {
 	0,			/* frame_pos */
 	0,			/* select_pos */
 	false,		/* enabled */
-	NULL		/* keys */
+	NULL,		/* keys */
+	NULL		/* read_input */
 };
 
 /** @brief Populates the picture
@@ -83,6 +85,18 @@ static int apptree_resize_picture(void)
 static void apptree_bind_keys(struct apptree_keybindings *key)
 {
 	control.keys = key;
+}
+
+/**	@brief Binds read_input function
+ *	@param func Function to be binded.
+ */
+static int apptree_bind_readinput(int (*func)(char *input))
+{
+	if (func == NULL)
+		return -1;
+	
+	control.read_input = func;
+	return 0;
 }
 
 /** @brief Checks if a node is atteched to the tree
@@ -188,12 +202,16 @@ static int apptree_create_master(struct apptree_node **master, char *title)
  */
 int apptree_init(struct apptree_node **master,
 					char *master_title,
-					struct apptree_keybindings *key)
+					struct apptree_keybindings *key,
+					int (*read_input)(char *input))
 {
 	if (apptree_create_master(master, master_title))
 		return -1;
 	
 	apptree_bind_keys(key);
+	
+	if (apptree_bind_readinput(read_input))
+		return -1;
 	
 	control.master 	= *master;
 	control.current	= *master;

@@ -61,6 +61,7 @@ struct apptree_control {
 	bool enabled;
 	
 	struct apptree_keybindings *keys;
+	int (*read_input)(char *input);
 };
 
 int apptree_create_node(struct apptree_node **new_node,
@@ -70,7 +71,8 @@ int apptree_create_node(struct apptree_node **new_node,
 							void (*function)(void));
 int apptree_init(struct apptree_node **master,
 					char *master_title,
-					struct apptree_keybindings *key);
+					struct apptree_keybindings *key,
+					int (*read_input)(char *input));
 							
 int apptree_enable(void);
 							
