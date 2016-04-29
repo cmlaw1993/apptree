@@ -338,7 +338,13 @@ int apptree_enable(void)
  *	
  *	The value of frame_pos is adjusted based on the value of select_pos.
  *	Therefore, this function is called after every update to the value of
- *	select_pos.
+ *	select_pos. It helps to handle the following 4 conditions in the same
+ *	order.
+ *
+ *		1. Select arrow loops from bottom to top. 
+ *		2. Select arrow loops from top to bottom.
+ *		3. Select arrow moves downward beyond current frame.
+ *		4. Select arrow moves upward beyond current frame.
  */
 static void apptree_adjust_frame_pos(void)
 {
@@ -346,6 +352,10 @@ static void apptree_adjust_frame_pos(void)
 		control.frame_pos = 0;
 	} else if (control.select_pos == (control.picture_height - 1)) {
 		control.frame_pos = control.picture_height - FRAME_HEIGHT;
+		
+		if(control.frame_pos < 0)
+			control.frame_pos = 0;
+		
 	} else if (control.select_pos >= (control.frame_pos + FRAME_HEIGHT)) {
 		control.frame_pos++;
 	} else if (control.select_pos < control.frame_pos) {
