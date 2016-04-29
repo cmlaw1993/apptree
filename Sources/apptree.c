@@ -431,8 +431,10 @@ static void apptree_handle_select_input(void)
 		apptree_populate_picture();
 		apptree_print_menu();
 	} else {
-		child->function();
-		apptree_print_menu();
+		if(child->function) {
+			child->function();
+			apptree_print_menu();
+		}
 	}
 }
 
