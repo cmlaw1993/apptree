@@ -29,6 +29,7 @@ static void apptree_decrease_select_pos(void);
 static void apptree_handle_up_input(void);
 static void apptree_handle_down_input(void);
 static void apptree_handle_select_input(void);
+static void apptree_handle_back_input(void);
 
 /* Initialize control structure */
 static struct apptree_control control = {
@@ -435,6 +436,24 @@ static void apptree_handle_select_input(void)
 	}
 }
 
+/** @brief Handles a "back" input.
+ */
+static void apptree_handle_back_input(void)
+{
+	if (control.current == control.master)
+		return;
+	
+	control.current = control.current->parent;
+	
+	control.picture_height = control.current->num_child;
+	control.frame_pos = 0;
+	control.select_pos = 0;
+
+	apptree_resize_picture();
+	apptree_populate_picture();
+	apptree_print_menu();
+}
+
 /** @brief Handles user input
  *	@returns 0 if a new input is detected and -1 if otherwise.
  *
@@ -457,6 +476,8 @@ int apptree_handle_input(void)
 		apptree_handle_down_input();
 	} else if (input == control.keys->select) {
 		apptree_handle_select_input();
+	} else if (input == control.keys->back) {
+		apptree_handle_back_input();
 	}
 	
 	return 0;
