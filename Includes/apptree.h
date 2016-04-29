@@ -90,5 +90,6 @@ int apptree_enable(void);
 							
 int apptree_handle_up_input(void);
 int apptree_handle_down_input(void);
+int apptree_handle_input(void);
 									
 #endif	/* APPTREE_H */

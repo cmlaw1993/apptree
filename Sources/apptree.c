@@ -404,3 +404,25 @@ int apptree_handle_down_input(void)
 	
 	return 0;
 }
+
+/** @brief Handles user input
+ *	@returns 0 if a new input is detected and -1 if otherwise.
+ *
+ *	This function checks for a user input and handles it according to the
+ *	binded key values.
+ */
+int apptree_handle_input(void)
+{
+	char input;
+	
+	if (control.read_input(&input))
+		return -1;
+	
+	if (input == control.keys->up) {
+		apptree_handle_up_input();
+	} else if (input == control.keys->down) {
+		apptree_handle_down_input();
+	}
+	
+	return 0;
+}
