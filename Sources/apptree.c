@@ -263,9 +263,9 @@ static void apptree_print_info(void)
 static void apptree_print_select(int index)
 {
 	if (index == control.select_pos)
-		printf("-> ");
+		printf(" -> ");
 	else
-		printf("   ");
+		printf("    ");
 }
 
 /** @brief Prints a frame
@@ -279,7 +279,7 @@ static void apptree_print_frame(void)
 		
 		for (i = start; i < control.picture_height; i++) {
 			apptree_print_select(i);
-			printf("%2d.%s\r\n", i+1, control.picture[i]);
+			printf("%2d. %s\r\n", i+1, control.picture[i]);
 		}
 
 		for (j = i; j < FRAME_HEIGHT; j++)
