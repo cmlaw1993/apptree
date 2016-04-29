@@ -26,6 +26,8 @@ static void apptree_adjust_frame_pos(void);
 static void apptree_increase_select_pos(void);
 static void apptree_decrease_select_pos(void);
 
+static void apptree_handle_up_input(void);
+static void apptree_handle_down_input(void);
 static void apptree_handle_select_input(void);
 
 /* Initialize control structure */
@@ -380,31 +382,21 @@ static void apptree_decrease_select_pos(void)
 /** @brief Handles an "up" input
  *	@returns 0 if successful and -1 if otherwise.
  */
-int apptree_handle_up_input(void)
+static void apptree_handle_up_input(void)
 {
-	if (!control.enabled)
-		return -1;
-	
 	apptree_decrease_select_pos();
 	apptree_adjust_frame_pos();
 	apptree_print_menu();
-	
-	return 0;
 }
 
 /** @brief Handles a "down" input
  *	@returns 0 if successful and -1 if otherwise.
  */
-int apptree_handle_down_input(void)
+static void apptree_handle_down_input(void)
 {
-	if (!control.enabled)
-		return -1;
-	
 	apptree_increase_select_pos();
 	apptree_adjust_frame_pos();
 	apptree_print_menu();
-	
-	return 0;
 }
 
 /** @brief Handles a "select" input
@@ -442,6 +434,9 @@ static void apptree_handle_select_input(void)
 int apptree_handle_input(void)
 {
 	char input;
+	
+	if (!control.enabled)
+		return -1;
 	
 	if (control.read_input(&input))
 		return -1;
