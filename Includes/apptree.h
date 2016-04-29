@@ -47,7 +47,19 @@ struct apptree_keybindings {
 	char home;
 };
 
-/** Keeps track of the current tree */
+/** @struct apptree_control
+ *	@brief Keeps track of the current tree
+ *	@var master Handle to the master node.
+ *	@var current Handle to the current parent.
+ *	@var picture Titles of all children for current master.
+ *	@var picture_height Height of the picture.
+ *	@var frame_pos Position of the frame in the picture.
+ *	@var select_pos Position of the select arrow in the picture.
+ *	@var enabled Set true when the enable function is called.
+ *	@var keys Input key bindings.
+ *	@var read_input Function for reading input. It returns 0 if successful
+ *	and -1 if otherwise.
+ */
 struct apptree_control {
 	struct apptree_node *master;
 	struct apptree_node *current;
