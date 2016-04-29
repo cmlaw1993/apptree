@@ -216,10 +216,6 @@ int apptree_init(struct apptree_node **master,
 	control.master 	= *master;
 	control.current	= *master;
 	
-	control.frame_pos = 0;
-	control.picture_height = 0;
-	control.enabled = false;
-	
 	return 0;
 }
 
