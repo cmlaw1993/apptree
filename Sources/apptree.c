@@ -30,7 +30,7 @@ static struct apptree_control control = {
 	NULL,		/* master */
 	NULL,		/* current */
 	NULL,		/* picture */
-	0,			/* picture_size */
+	0,			/* picture_length */
 	0,			/* frame_pos */
 	0,			/* select_pos */
 	false,		/* enabled */
@@ -183,14 +183,14 @@ static int apptree_create_master(struct apptree_node **master, char *title)
 
 /** @brief Initializes the apptree and creates a master node.
  *	@param master Handle for holding the master node.
- *	@param title Title for the master node.
+ *	@param master_title title Title for the master node.
  *	@returns 0 if successful and -1 if otherwise.
  */
 int apptree_init(struct apptree_node **master,
-					char *title,
+					char *master_title,
 					struct apptree_keybindings *key)
 {
-	if (apptree_create_master(master, title))
+	if (apptree_create_master(master, master_title))
 		return -1;
 	
 	apptree_bind_keys(key);

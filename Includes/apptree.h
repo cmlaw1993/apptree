@@ -69,7 +69,7 @@ int apptree_create_node(struct apptree_node **new_node,
 							char *info,
 							void (*function)(void));
 int apptree_init(struct apptree_node **master,
-					char *title,
+					char *master_title,
 					struct apptree_keybindings *key);
 							
 int apptree_enable(void);
