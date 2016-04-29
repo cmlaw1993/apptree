@@ -10,7 +10,7 @@
 static void apptree_populate_picture(void);
 static int apptree_resize_picture(void);
 
-static void apptree_bind_keys(struct apptree_keybindings *key);
+static int apptree_bind_keys(struct apptree_keybindings *key);
 static int apptree_bind_readinput(int (*func)(char *input));
 static int apptree_validate_node(struct apptree_node *block);
 static int apptree_create_master(struct apptree_node **master, char *title);
@@ -81,10 +81,15 @@ static int apptree_resize_picture(void)
 
 /** @brief Binds input keys
  *	@param key Pointer to key binding struct.
+ *	@returns 0 if successful and -1 if otherwise.
  */
-static void apptree_bind_keys(struct apptree_keybindings *key)
+static int apptree_bind_keys(struct apptree_keybindings *key)
 {
+	if (key == NULL)
+		return -1;
+	
 	control.keys = key;
+	return 0;
 }
 
 /**	@brief Binds read_input function
@@ -208,7 +213,8 @@ int apptree_init(struct apptree_node **master,
 	if (apptree_create_master(master, master_title))
 		return -1;
 	
-	apptree_bind_keys(key);
+	if (apptree_bind_keys(key))
+		return -1;
 	
 	if (apptree_bind_readinput(read_input))
 		return -1;
