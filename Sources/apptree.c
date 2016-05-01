@@ -314,6 +314,7 @@ static void apptree_print_blank(void)
  */
 static void apptree_print_menu(void)
 {
+	apptree_print_blank();
 	apptree_print_title();
 	apptree_print_blank();
 	apptree_print_frame();
