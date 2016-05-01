@@ -142,10 +142,10 @@ static int apptree_validate_node(struct apptree_node *block)
  *	subsequently attaches it to an existing parent in the tree.
  */
 int apptree_create_node(struct apptree_node **new_node,
-							struct apptree_node *parent,
-							char *title,
-							char *info,
-							void (*function)(void))
+		struct apptree_node *parent,
+		char *title,
+		char *info,
+		void (*function)(struct apptree_node *parent, int child_idx))
 {	
 	struct apptree_node *node;
 	
@@ -445,7 +445,7 @@ static void apptree_handle_select_input(void)
 		apptree_print_menu();
 	} else {
 		if(child->function) {
-			child->function();
+			child->function(control.current, control.select_pos);
 			apptree_print_menu();
 		}
 	}

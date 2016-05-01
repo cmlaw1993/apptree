@@ -36,7 +36,7 @@ struct apptree_node {
 	struct list_head list_parent;
 	int num_child;
 	
-	void (*function)(void);
+	void (*function)(struct apptree_node *parent, int child_idx);
 };
 
 struct apptree_keybindings {
@@ -77,10 +77,10 @@ struct apptree_control {
 };
 
 int apptree_create_node(struct apptree_node **new_node,
-							struct apptree_node *parent,
-							char *title,
-							char *info,
-							void (*function)(void));
+		struct apptree_node *parent,
+		char *title,
+		char *info,
+		void (*function)(struct apptree_node *parent, int child_idx));
 int apptree_init(struct apptree_node **master,
 					char *master_title,
 					struct apptree_keybindings *key,
