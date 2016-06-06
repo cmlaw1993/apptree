@@ -13,7 +13,9 @@ static int apptree_resize_picture(void);
 static int apptree_bind_keys(struct apptree_keybindings *key);
 static int apptree_bind_readinput(int (*func)(char *input));
 static int apptree_validate_node(struct apptree_node *block);
-static int apptree_create_master(struct apptree_node **master, char *title);
+static int apptree_create_master(struct apptree_node **master,
+									char *title,
+									enum apptree_mode mode);
 
 static void apptree_print_keybindings(void);
 static void apptree_print_info(void);
@@ -21,11 +23,15 @@ static void apptree_print_frame(void);
 static void apptree_print_title(void);
 static void apptree_print_blank(void);
 static void apptree_print_select(int index);
+static void apptree_print_selected(struct apptree_node *parent,
+									int child_index);
 static void apptree_print_menu(void);
 
 static void apptree_adjust_frame_pos(void);
 static void apptree_increase_select_pos(void);
 static void apptree_decrease_select_pos(void);
+static void apptree_update_selected(struct apptree_node *parent,
+									int child_index);
 
 static void apptree_handle_up_input(void);
 static void apptree_handle_down_input(void);
@@ -139,17 +145,30 @@ static int apptree_validate_node(struct apptree_node *block)
  *	@returns 0 if successful and -1 if otherwise.
  *
  *	This fucntion dynamically allocates memory to create a new node and
- *	subsequently attaches it to an existing parent in the tree.
+ *	subsequently attaches it to an existing parent in the tree. This function
+ *	will fail under two circumstances:
+ *	
+ *		1. The apptree_function has been called.
+ *		2. The parent function is an end node.
+ *
+ *	@note The children of a node which is not Simple (either Single Selection
+ *	or Multi Selection) is automatically set as an end node. An end node will
+ *	not be able to have children.
  */
 int apptree_create_node(struct apptree_node **new_node,
 		struct apptree_node *parent,
 		char *title,
 		char *info,
+		enum apptree_mode mode,
+		bool selected,
 		void (*function)(struct apptree_node *parent, int child_idx))
 {	
 	struct apptree_node *node;
 	
 	if (control.enabled)
+		return -1;
+	
+	if (parent->end)
 		return -1;
 	
 	node = (struct apptree_node *)calloc(1, sizeof(struct apptree_node));
@@ -168,9 +187,16 @@ int apptree_create_node(struct apptree_node **new_node,
 	list_add_tail(&node->list_child, &parent->list_parent);
 	parent->num_child++;
 	
+	if (parent->mode != APPTREE_MODE_SIMPLE)
+		node->end = true;
+	else
+		node->end = false;
+	
 	node->title	 	= title;
 	node->info	 	= info;
+	node->mode		= mode;
 	node->num_child = 0;
+	node->selected	= selected;
 	node->function	= function;
 
 	*new_node = node;
@@ -185,7 +211,9 @@ int apptree_create_node(struct apptree_node **new_node,
  *
  *	@note This function should only be called by the apptree_init function.
  */
-static int apptree_create_master(struct apptree_node **master, char *title)
+static int apptree_create_master(struct apptree_node **master,
+									char *title,
+									enum apptree_mode mode)
 {
 	struct apptree_node *node;
 	
@@ -199,7 +227,10 @@ static int apptree_create_master(struct apptree_node **master, char *title)
 	node->title 	= title;
 	node->info 		= NULL;
 	node->parent	= NULL;
+	node->mode		= mode;
 	node->num_child = 0;
+	node->selected	= false;
+	node->end		= false;
 	node->function 	= NULL;
 	
 	*master = node;
@@ -214,10 +245,11 @@ static int apptree_create_master(struct apptree_node **master, char *title)
  */
 int apptree_init(struct apptree_node **master,
 					char *master_title,
+					enum apptree_mode master_mode,
 					struct apptree_keybindings *key,
 					int (*read_input)(char *input))
 {
-	if (apptree_create_master(master, master_title))
+	if (apptree_create_master(master, master_title, master_mode))
 		return -1;
 	
 	if (apptree_bind_keys(key))
@@ -268,6 +300,31 @@ static void apptree_print_select(int index)
 		printf("    ");
 }
 
+/** @brief Print the selected marker of a node
+ *	@param parent The parent of the node.
+ *	@param child_index The position of the node as a child to its parent.
+ *	
+ *	This function prints out the selected marker of a node if its parent is not
+ *	Simple.
+ */
+static void apptree_print_selected(struct apptree_node *parent,
+									int child_index)
+{
+	struct list_head *head;
+	struct apptree_node *node;
+
+	head = list_travese_to_index(&parent->list_parent, child_index);
+	node = container_of(head, struct apptree_node, list_child);
+	
+	if (parent->mode == APPTREE_MODE_SIMPLE)
+		return;
+	
+	if (node->selected)
+		printf("[*] ");
+	else
+		printf("[ ] ");
+}
+
 /** @brief Prints a frame
  */
 static void apptree_print_frame(void)
@@ -279,6 +336,7 @@ static void apptree_print_frame(void)
 		
 		for (i = start; i < control.picture_height; i++) {
 			apptree_print_select(i);
+			apptree_print_selected(control.current, start + i);
 			printf("%2d. %s\r\n", i+1, control.picture[i]);
 		}
 
@@ -378,7 +436,7 @@ static void apptree_adjust_frame_pos(void)
 	}
 }
 
-/** @breif Increase the value of select_pos
+/** @brief Increase the value of select_pos
  *
  *	This function increases the value of select_pos and also helps to reposition
  *	it should the value reach the end of the picture_length.
@@ -391,7 +449,7 @@ static void apptree_increase_select_pos(void)
 		control.select_pos++;
 }
 
-/** @breif Decreases the value of select_pos
+/** @brief Decreases the value of select_pos
  *
  *	This function decreases the value of select_pos and also helps to reposition
  *	it should the value reach the end of the picture_length.
@@ -424,6 +482,52 @@ static void apptree_handle_down_input(void)
 	apptree_print_menu();
 }
 
+/** @brief Update the selected field of a node's children
+ *	@param parent The parent node.
+ *	@param child_index The index of the child that has been selected.
+ *
+ *	This function updates the selected field of a node's children if the node
+ *	is not Simple. This function should only be called after a recent selection
+ *	has been made by the user.
+ */
+static void apptree_update_selected(struct apptree_node *parent,
+									int child_index)
+{
+	struct list_head *head;
+	struct apptree_node *child;
+	int i;
+	
+	switch (parent->mode)
+	{
+	case APPTREE_MODE_SIMPLE:
+		/* do nothing */
+		break;
+	
+	case APPTREE_MODE_SINGLE_SELECTION:
+		for (i = 0; i < parent->num_child; i++) {
+			head = list_travese_to_index(&parent->list_parent, i);
+			child = container_of(head, struct apptree_node, list_child);
+			
+			if (i == child_index)
+				child->selected = true;
+			else
+				child->selected = false;
+		}
+		break;
+		
+	case APPTREE_MODE_MULTI_SELECTION:
+		head = list_travese_to_index(&parent->list_parent, child_index);
+		child = container_of(head, struct apptree_node, list_child);
+	
+		if (child->selected)
+			child->selected = false;
+		else
+			child->selected = true;
+		
+		break;
+	}		
+}
+
 /** @brief Handles a "select" input
  */
 static void apptree_handle_select_input(void)
@@ -447,6 +551,7 @@ static void apptree_handle_select_input(void)
 	} else {
 		if(child->function) {
 			child->function(control.current, control.select_pos);
+			apptree_update_selected(control.current, control.select_pos);
 			apptree_print_menu();
 		}
 	}

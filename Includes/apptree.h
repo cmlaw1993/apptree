@@ -25,6 +25,12 @@
 
 struct apptree_node;
 
+enum apptree_mode {
+	APPTREE_MODE_SIMPLE,
+	APPTREE_MODE_SINGLE_SELECTION,
+	APPTREE_MODE_MULTI_SELECTION
+};
+
 /* A single tree node */
 struct apptree_node {
 	char *title;
@@ -32,9 +38,13 @@ struct apptree_node {
 	
 	struct apptree_node *parent;
 	
+	enum apptree_mode mode;
 	struct list_head list_child;
 	struct list_head list_parent;
 	int num_child;
+	
+	bool selected;
+	bool end;
 	
 	void (*function)(struct apptree_node *parent, int child_idx);
 };
@@ -80,9 +90,13 @@ int apptree_create_node(struct apptree_node **new_node,
 		struct apptree_node *parent,
 		char *title,
 		char *info,
+		enum apptree_mode mode,
+		bool selected,
 		void (*function)(struct apptree_node *parent, int child_idx));
+		
 int apptree_init(struct apptree_node **master,
 					char *master_title,
+					enum apptree_mode master_mode,
 					struct apptree_keybindings *key,
 					int (*read_input)(char *input));
 							
