@@ -7,12 +7,12 @@
 #ifndef APPTREE_H
 #define APPTREE_H
 
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
 
 #include "list.h"
+
 
 #define TERMINAL_HEIGHT					24
 #define TERMINAL_WIDTH					80
@@ -107,9 +107,8 @@ struct apptree_control {
 	
 	/** Input key bindings. */
 	struct apptree_keybindings *keys;
-	/** Non-blocking function for reading input. It returns 0 if a new
-		input is detected and -1 if otherwise. */
-	int (*read_input)(char *input);
+	
+
 };
 
 
@@ -120,14 +119,15 @@ int apptree_create_node(struct apptree_node **new_node,
 		enum apptree_mode mode,
 		bool selected,
 		void (*function)(struct apptree_node *parent, int child_idx));
-		
+
 int apptree_init(struct apptree_node **master,
 					char *master_title,
 					enum apptree_mode master_mode,
 					struct apptree_keybindings *key,
-					int (*read_input)(char *input));
-							
+					int (*read_input)(char *input),
+					void (*write_output)(char output));
+
 int apptree_enable(void);
 int apptree_handle_input(void);
-									
+
 #endif	/* APPTREE_H */

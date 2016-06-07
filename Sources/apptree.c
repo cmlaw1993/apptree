@@ -5,13 +5,13 @@
  *  @date April 2016
  */
 
+#include "apptree_io.h"
 #include "apptree.h"
 
 static void apptree_populate_picture(void);
 static int apptree_resize_picture(void);
 
 static int apptree_bind_keys(struct apptree_keybindings *key);
-static int apptree_bind_readinput(int (*func)(char *input));
 static int apptree_validate_node(struct apptree_node *block);
 static int apptree_create_master(struct apptree_node **master,
 									char *title,
@@ -68,20 +68,6 @@ static int apptree_bind_keys(struct apptree_keybindings *key)
 	return 0;
 }
 
-/**	@brief Binds read_input function
- *	@param func Function to be binded.
- *
- *	@note The input function should be a non-blocking function.
- */
-static int apptree_bind_readinput(int (*func)(char *input))
-{
-	if (func == NULL)
-		return -1;
-	
-	control.read_input = func;
-	return 0;
-}
-
 /**	@brief Creates a master node.
  *	@param master Handle for holoding the master node.
  *	@param title Title for the master node.
@@ -130,16 +116,19 @@ int apptree_init(struct apptree_node **master,
 					char *master_title,
 					enum apptree_mode master_mode,
 					struct apptree_keybindings *key,
-					int (*read_input)(char *input))
+					int (*read_input)(char *input),
+					void (*write_output)(char output))
 {
-	if (apptree_create_master(master, master_title, master_mode))
+	if ((read_input == NULL) || (write_output == NULL))
 		return -1;
 	
 	if (apptree_bind_keys(key))
 		return -1;
 	
-	if (apptree_bind_readinput(read_input))
+	if (apptree_create_master(master, master_title, master_mode))
 		return -1;
+	
+	apptree_io_init(read_input, write_output);
 	
 	control.master 			= *master;
 	control.current			= *master;
@@ -205,7 +194,7 @@ static int apptree_resize_picture(void)
  */
 static void apptree_print_keybindings(void)
 {
-	printf("KEY BINDINGS => UP:[%c]  DOWN:[%c]  SELECT:[%c]  BACK:[%c]  HOME:[%c]\r\n",
+	apptree_print("KEY BINDINGS => UP:[%c]  DOWN:[%c]  SELECT:[%c]  BACK:[%c]  HOME:[%c]\r\n",
 		control.keys->up, control.keys->down, control.keys->select,
 		control.keys->back, control.keys->home);
 }
@@ -220,7 +209,7 @@ static void apptree_print_info(void)
 	head = list_travese_to_index(&control.current->list_parent, control.select_pos);
 	node = container_of(head, struct apptree_node, list_child);
 	
-	printf("< %s >\r\n", node->info);
+	apptree_print("< %s >\r\n", node->info);
 }
 
 /** @brief Prints the select arrow
@@ -231,9 +220,9 @@ static void apptree_print_info(void)
 static void apptree_print_select(int index)
 {
 	if (index == control.select_pos)
-		printf(" -> ");
+		apptree_print(" -> ");
 	else
-		printf("    ");
+		apptree_print("    ");
 }
 
 /** @brief Print the selected marker of a node
@@ -256,9 +245,9 @@ static void apptree_print_selected(struct apptree_node *parent,
 		return;
 	
 	if (node->selected)
-		printf("[*] ");
+		apptree_print("[*] ");
 	else
-		printf("[ ] ");
+		apptree_print("[ ] ");
 }
 
 /** @brief Prints a frame
@@ -273,18 +262,18 @@ static void apptree_print_frame(void)
 		for (i = start; i < control.picture_height; i++) {
 			apptree_print_select(i);
 			apptree_print_selected(control.current, start + i);
-			printf("%2d. %s\r\n", i+1, control.picture[i]);
+			apptree_print("%2x. %s\r\n", i+1, control.picture[i]);
 		}
 
 		for (j = i; j < FRAME_HEIGHT; j++)
-			printf("\r\n");
+			apptree_print("\r\n");
 	} else {
 		end = control.frame_pos + FRAME_HEIGHT;
 		
 		for (i = start; i < end; i++)
 		{
 			apptree_print_select(i);
-			printf("%2d. %s\r\n", i+1, control.picture[i]);
+			apptree_print("%2x. %s\r\n", i+1, control.picture[i]);
 		}
 	}
 }
@@ -293,14 +282,14 @@ static void apptree_print_frame(void)
  */
 static void apptree_print_title(void)
 {
-	printf("%s\r\n", control.current->title);
+	apptree_print("%s\r\n", control.current->title);
 }
 
 /** @brief Prints a blank line.
  */
 static void apptree_print_blank(void)
 {
-	printf("\r\n");
+	apptree_print("\r\n");
 }
 
 /**	@brief Prints the menu.
@@ -650,7 +639,7 @@ int apptree_handle_input(void)
 	if (!control.enabled)
 		return -1;
 	
-	if (control.read_input(&input))
+	if (apptree_read(&input))
 		return -1;
 	
 	if (input == control.keys->up) {
