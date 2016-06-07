@@ -1,6 +1,6 @@
 
 /** @file apptree.c
- *  @brief A tree-based application display framework.
+ *  @brief A tree-based application display framework for microcontrollers.
  *  @author Dennis Law
  *  @date April 2016
  */
@@ -39,18 +39,126 @@ static void apptree_handle_select_input(void);
 static void apptree_handle_back_input(void);
 static void apptree_handle_home_input(void);
 
-/* Initialize control structure */
-static struct apptree_control control = {
-	NULL,		/* master */
-	NULL,		/* current */
-	NULL,		/* picture */
-	0,			/* picture_length */
-	0,			/* frame_pos */
-	0,			/* select_pos */
-	false,		/* enabled */
-	NULL,		/* keys */
-	NULL		/* read_input */
-};
+static struct apptree_control control;
+
+
+/* -------------------------------------------------------------------------- */
+/** @name Initialization Functions
+ *	The initialization functions are used to initialize the configuration
+ *	variables used by the apptree. It also creates a master node which
+ *	subsequent nodes will grow from and binds the key inputs.
+ *
+ *	@note The apptree uses the standard C library (printf) for printing its
+ *	output. The standard ouput (serial, LCD, etc) is expected to be properly
+ *	configured and binded to the printf function prior to calling the init
+ *	function.
+ */
+/** @{*/
+
+/** @brief Binds input keys
+ *	@param key Pointer to key binding struct.
+ *	@returns 0 if successful and -1 if otherwise.
+ */
+static int apptree_bind_keys(struct apptree_keybindings *key)
+{
+	if (key == NULL)
+		return -1;
+	
+	control.keys = key;
+	return 0;
+}
+
+/**	@brief Binds read_input function
+ *	@param func Function to be binded.
+ *
+ *	@note The input function should be a non-blocking function.
+ */
+static int apptree_bind_readinput(int (*func)(char *input))
+{
+	if (func == NULL)
+		return -1;
+	
+	control.read_input = func;
+	return 0;
+}
+
+/**	@brief Creates a master node.
+ *	@param master Handle for holoding the master node.
+ *	@param title Title for the master node.
+ *	@param mode Mode of the master node.
+ *	@returns 0 if successful and -1 if otherwise.
+ */
+static int apptree_create_master(struct apptree_node **master,
+									char *title,
+									enum apptree_mode mode)
+{
+	struct apptree_node *node;
+	
+	node = (struct apptree_node *)calloc(1, sizeof(struct apptree_node));
+	if (node == NULL)
+		return -1;
+	
+	INIT_LIST_HEAD(&node->list_parent);
+	INIT_LIST_HEAD(&node->list_child);
+	
+	node->title 	= title;
+	node->info 		= NULL;
+	node->parent	= NULL;
+	node->mode		= mode;
+	node->num_child = 0;
+	node->selected	= false;
+	node->end		= false;
+	node->function 	= NULL;
+	
+	*master = node;
+	
+	return 0;
+}
+
+/** @brief Initializes the apptree and creates a master node.
+ *	@param master Handle for holding the master node.
+ *	@param master_title Title for the master node.
+ *	@param mode Mode of the master node.
+ *	@param key Key binding for the apptree.
+ *	@param read_input Non-blocking function for reading user input.
+ *	@returns 0 if successful and -1 if otherwise.
+ *
+ *	@note This function should be called before any nodes are added to
+ *	the tree.
+ */
+int apptree_init(struct apptree_node **master,
+					char *master_title,
+					enum apptree_mode master_mode,
+					struct apptree_keybindings *key,
+					int (*read_input)(char *input))
+{
+	if (apptree_create_master(master, master_title, master_mode))
+		return -1;
+	
+	if (apptree_bind_keys(key))
+		return -1;
+	
+	if (apptree_bind_readinput(read_input))
+		return -1;
+	
+	control.master 			= *master;
+	control.current			= *master;
+	control.picture 		= NULL,
+	control.picture_height 	= 0;
+	control.frame_pos 		= 0;
+	control.select_pos 		= 0;
+	control.enabled 		= 0;
+	
+	return 0;
+}
+
+/** @}*/
+
+/* -------------------------------------------------------------------------- */
+/** @name Printing Functions
+ *	Handles the printing of the apptree to the output media.
+ */
+/** @{*/
 
 /** @brief Populates the picture
  *	
@@ -58,8 +166,8 @@ static struct apptree_control control = {
  *	to the current node.
  *
  *	@note Ensure that the picture size is the same as the number of children in
- *	the current node. Call the function apptree_resize_picture if the size is
- *	incorrect.
+ *	the current node before calling. Call the function apptree_resize_picture
+ *	if the size is incorrect.
  */
 static void apptree_populate_picture(void)
 {
@@ -92,178 +200,6 @@ static int apptree_resize_picture(void)
 	return 0;
 }
 
-/** @brief Binds input keys
- *	@param key Pointer to key binding struct.
- *	@returns 0 if successful and -1 if otherwise.
- */
-static int apptree_bind_keys(struct apptree_keybindings *key)
-{
-	if (key == NULL)
-		return -1;
-	
-	control.keys = key;
-	return 0;
-}
-
-/**	@brief Binds read_input function
- *	@param func Function to be binded.
- */
-static int apptree_bind_readinput(int (*func)(char *input))
-{
-	if (func == NULL)
-		return -1;
-	
-	control.read_input = func;
-	return 0;
-}
-
-/** @brief Checks if a node is atteched to the tree
- *	@returns 0 if yes and -1 if otherwise
- *	
- *	A node is attached to the tree if it has the master node as its encestor.
- */
-static int apptree_validate_node(struct apptree_node *block)
-{
-	struct apptree_node *node = block;
-	
-	do {
-		node = node->parent;
-	} while (node->parent != NULL);
-	
-	if (node != control.master)
-		return -1;
-	else
-		return 0;
-}
-
-/** @brief Creates a node and attaches it to the tree
- *	@param new_node Handle for holding the new node.
- *	@param parent Parent node to attach the new node to.
- *	@param title Title message of the new node.
- *	@param info Info message of the new node.
- *	@param function Function to bind to this node.
- *	@returns 0 if successful and -1 if otherwise.
- *
- *	This fucntion dynamically allocates memory to create a new node and
- *	subsequently attaches it to an existing parent in the tree. This function
- *	will fail under two circumstances:
- *	
- *		1. The apptree_function has been called.
- *		2. The parent function is an end node.
- *
- *	@note The children of a node which is not Simple (either Single Selection
- *	or Multi Selection) is automatically set as an end node. An end node will
- *	not be able to have children.
- */
-int apptree_create_node(struct apptree_node **new_node,
-		struct apptree_node *parent,
-		char *title,
-		char *info,
-		enum apptree_mode mode,
-		bool selected,
-		void (*function)(struct apptree_node *parent, int child_idx))
-{	
-	struct apptree_node *node;
-	
-	if (control.enabled)
-		return -1;
-	
-	if (parent->end)
-		return -1;
-	
-	node = (struct apptree_node *)calloc(1, sizeof(struct apptree_node));
-	if (node == NULL)
-		return -1;
-
-	node->parent = parent;
-	if (apptree_validate_node(node)) {
-		free(node);
-		return -1;
-	}
-	
-	INIT_LIST_HEAD(&node->list_parent);
-	
-	INIT_LIST_HEAD(&node->list_child);
-	list_add_tail(&node->list_child, &parent->list_parent);
-	parent->num_child++;
-	
-	if (parent->mode != APPTREE_MODE_SIMPLE)
-		node->end = true;
-	else
-		node->end = false;
-	
-	node->title	 	= title;
-	node->info	 	= info;
-	node->mode		= mode;
-	node->num_child = 0;
-	node->selected	= selected;
-	node->function	= function;
-
-	*new_node = node;
-	
-	return 0;
-}
-
-/**	@brief Creates a master node.
- *	@param master Handle for holoding the master node.
- *	@param title Title for the master node.
- *	@returns 0 if successful and -1 if otherwise.
- *
- *	@note This function should only be called by the apptree_init function.
- */
-static int apptree_create_master(struct apptree_node **master,
-									char *title,
-									enum apptree_mode mode)
-{
-	struct apptree_node *node;
-	
-	node = (struct apptree_node *)calloc(1, sizeof(struct apptree_node));
-	if (node == NULL)
-		return -1;
-	
-	INIT_LIST_HEAD(&node->list_parent);
-	INIT_LIST_HEAD(&node->list_child);
-	
-	node->title 	= title;
-	node->info 		= NULL;
-	node->parent	= NULL;
-	node->mode		= mode;
-	node->num_child = 0;
-	node->selected	= false;
-	node->end		= false;
-	node->function 	= NULL;
-	
-	*master = node;
-	
-	return 0;
-}
-
-/** @brief Initializes the apptree and creates a master node.
- *	@param master Handle for holding the master node.
- *	@param master_title title Title for the master node.
- *	@returns 0 if successful and -1 if otherwise.
- */
-int apptree_init(struct apptree_node **master,
-					char *master_title,
-					enum apptree_mode master_mode,
-					struct apptree_keybindings *key,
-					int (*read_input)(char *input))
-{
-	if (apptree_create_master(master, master_title, master_mode))
-		return -1;
-	
-	if (apptree_bind_keys(key))
-		return -1;
-	
-	if (apptree_bind_readinput(read_input))
-		return -1;
-	
-	control.master 	= *master;
-	control.current	= *master;
-	
-	return 0;
-}
-
 /** @brief Prints keybindings
  *	@note This function should only be called by apptree_print_menu.
  */
@@ -287,8 +223,8 @@ static void apptree_print_info(void)
 	printf("< %s >\r\n", node->info);
 }
 
-/** @brief prints the select arrow
- *	@index Index of the item in the picture.
+/** @brief Prints the select arrow
+ *	@param index Index of the item which the arrow is pointed on.
  *
  *	@note This function should only be called by apptree_print_menu.
  */
@@ -367,7 +303,7 @@ static void apptree_print_blank(void)
 	printf("\r\n");
 }
 
-/**	@brief Prints the menu
+/**	@brief Prints the menu.
  *	Prints the menu which consists of the title, info and frame in that order.
  */
 static void apptree_print_menu(void)
@@ -381,11 +317,112 @@ static void apptree_print_menu(void)
 	apptree_print_keybindings();
 }
 
+/** @}*/
+
+/* -------------------------------------------------------------------------- */
+/** @name Setup Functions
+ *	Handles node creation. Before any nodes can be added into the tree, the
+ *	initialization function has to be called.
+ */
+/** @{*/
+
+/** @brief Checks if a node is attached to the tree
+ *	@returns 0 if yes and -1 if otherwise
+ *	
+ *	A node is attached to the tree if it has the master node as its encestor.
+ */
+static int apptree_validate_node(struct apptree_node *block)
+{
+	struct apptree_node *node = block;
+	
+	do {
+		node = node->parent;
+	} while (node->parent != NULL);
+	
+	if (node != control.master)
+		return -1;
+	else
+		return 0;
+}
+
+/** @brief Creates a node and attaches it to the tree
+ *	@param new_node Handle for holding the new node.
+ *	@param parent Parent node to attach the new node to.
+ *	@param title Title message of the new node.
+ *	@param info Info message of the new node.
+ *	@param mode Mode of the node.
+ *	@param selected Indicated whether this node should be set as selected.
+ *	@param function Function to bind to this node.
+ *	@returns 0 if successful and -1 if otherwise.
+ *
+ *	This function dynamically allocates memory to create a new node and
+ *	subsequently attaches it to an existing parent in the tree. This function
+ *	will fail under two circumstances:
+ *	
+ *		1. The apptree_enable function has been called.
+ *		2. The parent function is an end node.
+ *
+ *	@note The children of a node which is not Simple (either Single Selection
+ *	or Multi Selection) is automatically set as an end node. An end node will
+ *	not be able to have children. Also, if a parent node is set to Single
+ *	Selection, only one of its children can be set as selected.
+ */
+int apptree_create_node(struct apptree_node **new_node,
+		struct apptree_node *parent,
+		char *title,
+		char *info,
+		enum apptree_mode mode,
+		bool selected,
+		void (*function)(struct apptree_node *parent, int child_idx))
+{	
+	struct apptree_node *node;
+	
+	if (control.enabled)
+		return -1;
+	
+	if (parent->end)
+		return -1;
+	
+	node = (struct apptree_node *)calloc(1, sizeof(struct apptree_node));
+	if (node == NULL)
+		return -1;
+
+	node->parent = parent;
+	if (apptree_validate_node(node)) {
+		free(node);
+		return -1;
+	}
+	
+	INIT_LIST_HEAD(&node->list_parent);
+	
+	INIT_LIST_HEAD(&node->list_child);
+	list_add_tail(&node->list_child, &parent->list_parent);
+	parent->num_child++;
+	
+	if (parent->mode != APPTREE_MODE_SIMPLE)
+		node->end = true;
+	else
+		node->end = false;
+	
+	node->title	 	= title;
+	node->info	 	= info;
+	node->mode		= mode;
+	node->num_child = 0;
+	node->selected	= selected;
+	node->function	= function;
+
+	*new_node = node;
+	
+	return 0;
+}
+
 /** @brief Enables the apptree
  *	@returns 0 if successful and -1 if otherwise.
  *
- *	Enables the apptree and prints the menu with the master node as the current
- *	node. The enabled flag is also set to prevent changes in the tree structure.
+ *	This function is called at the end of the setup phase (after all nodes have
+ *	been added. It enables the apptree and prints the menu with the master node
+ *	as the current node. The enabled flag is also set to prevent changes in the
+ *	tree structure.
  */
 int apptree_enable(void)
 {
@@ -407,12 +444,20 @@ int apptree_enable(void)
 	return 0;
 }
 
-/** @brief Adjust the vslue of frame_pos
+/** @}*/
+
+
+/* -------------------------------------------------------------------------- */
+/** @name Input Handling Functions
+ *	Handles the user input as well as any subsequent results from the input.
+ */
+/** @{*/
+
+/** @brief Adjust the value of frame_pos
  *	
  *	The value of frame_pos is adjusted based on the value of select_pos.
  *	Therefore, this function is called after every update to the value of
- *	select_pos. It helps to handle the following 4 conditions in the same
- *	order.
+ *	select_pos. It helps to handle the following 4 conditions.
  *
  *		1. Select arrow loops from bottom to top. 
  *		2. Select arrow loops from top to bottom.
@@ -462,26 +507,6 @@ static void apptree_decrease_select_pos(void)
 		control.select_pos--;
 }
 
-/** @brief Handles an "up" input
- *	@returns 0 if successful and -1 if otherwise.
- */
-static void apptree_handle_up_input(void)
-{
-	apptree_decrease_select_pos();
-	apptree_adjust_frame_pos();
-	apptree_print_menu();
-}
-
-/** @brief Handles a "down" input
- *	@returns 0 if successful and -1 if otherwise.
- */
-static void apptree_handle_down_input(void)
-{
-	apptree_increase_select_pos();
-	apptree_adjust_frame_pos();
-	apptree_print_menu();
-}
-
 /** @brief Update the selected field of a node's children
  *	@param parent The parent node.
  *	@param child_index The index of the child that has been selected.
@@ -528,6 +553,24 @@ static void apptree_update_selected(struct apptree_node *parent,
 	}		
 }
 
+/** @brief Handles an "up" input
+ */
+static void apptree_handle_up_input(void)
+{
+	apptree_decrease_select_pos();
+	apptree_adjust_frame_pos();
+	apptree_print_menu();
+}
+
+/** @brief Handles a "down" input
+ */
+static void apptree_handle_down_input(void)
+{
+	apptree_increase_select_pos();
+	apptree_adjust_frame_pos();
+	apptree_print_menu();
+}
+
 /** @brief Handles a "select" input
  */
 static void apptree_handle_select_input(void)
@@ -535,7 +578,8 @@ static void apptree_handle_select_input(void)
 	struct list_head *head;
 	struct apptree_node *child;
 	
-	head = list_travese_to_index(&control.current->list_parent, control.select_pos);
+	head = list_travese_to_index(&control.current->list_parent,
+									control.select_pos);
 	child = container_of(head, struct apptree_node, list_child);
 
 	if (child->num_child > 0) {	
@@ -593,7 +637,7 @@ static void apptree_handle_home_input(void)
 	apptree_print_menu();
 }
 
-/** @brief Handles user input
+/** @brief Handles user inputs
  *	@returns 0 if a new input is detected and -1 if otherwise.
  *
  *	This function checks for a user input and handles it according to the
@@ -623,3 +667,5 @@ int apptree_handle_input(void)
 	
 	return 0;
 }
+
+/** @}*/

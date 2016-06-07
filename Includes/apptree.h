@@ -23,32 +23,58 @@
 #define MAX_TITLE_WIDTH					74
 #define MAX_INFO_WIDTH					78
 
+
 struct apptree_node;
 
+
+/** @enum apptree_mode
+ *	@brief Defines modes for nodes.
+ */
 enum apptree_mode {
+	/** Simple mode */
 	APPTREE_MODE_SIMPLE,
+	/** Single Selection mode */
 	APPTREE_MODE_SINGLE_SELECTION,
+	/** Multi Selection mode */
 	APPTREE_MODE_MULTI_SELECTION
 };
 
-/* A single tree node */
+/** @struct apptree_node
+ *	@brief A single tree node
+ */
 struct apptree_node {
+	/** Node title */
 	char *title;
+	/** Node info */
 	char *info;
 	
+	/** Parent of the node */
 	struct apptree_node *parent;
 	
+	/** Mode of the node */
 	enum apptree_mode mode;
+	/** List head for inserting the node as a children of another node */
 	struct list_head list_child;
+	/** List head for inserting the node as a parent of another node */
 	struct list_head list_parent;
+	/** Number of children in this node */
 	int num_child;
 	
+	/** Determines if this node is selected */
 	bool selected;
+	/** Determines if this is an end node */
 	bool end;
 	
+	/** Function called when the node is selected
+	 *	@param parent Parent of this node.
+	 *	@param child_idx The position of this node as a child to its parent.
+	 */
 	void (*function)(struct apptree_node *parent, int child_idx);
 };
 
+/** @struct apptree_keybindings
+ *	@brief Structure for holding key binding information
+ */
 struct apptree_keybindings {
 	char up;
 	char down;
@@ -58,33 +84,34 @@ struct apptree_keybindings {
 };
 
 /** @struct apptree_control
- *	@brief Keeps track of the current tree
- *	@var master Handle to the master node.
- *	@var current Handle to the current parent.
- *	@var picture Titles of all children for current master.
- *	@var picture_height Height of the picture.
- *	@var frame_pos Position of the frame in the picture.
- *	@var select_pos Position of the select arrow in the picture.
- *	@var enabled Set true when the enable function is called.
- *	@var keys Input key bindings.
- *	@var read_input Function for reading input. It returns 0 if successful
- *	and -1 if otherwise.
+ *	@brief Keeps track of the apptree
  */
 struct apptree_control {
+	/** Handle to the master node */
 	struct apptree_node *master;
+	/** Handle to the current parent */
 	struct apptree_node *current;
 	
+	/** Titles of all children for current master */
 	char **picture;
+	/** Height of the picture. */
 	int picture_height;
 	
+	/** Position of the frame in the picture */
 	int frame_pos;
+	/** Position of the select arrow in the picture. */
 	int select_pos;
 	
+	/** Set as true when the enable function is called. */
 	bool enabled;
 	
+	/** Input key bindings. */
 	struct apptree_keybindings *keys;
+	/** Non-blocking function for reading input. It returns 0 if a new
+		input is detected and -1 if otherwise. */
 	int (*read_input)(char *input);
 };
+
 
 int apptree_create_node(struct apptree_node **new_node,
 		struct apptree_node *parent,
