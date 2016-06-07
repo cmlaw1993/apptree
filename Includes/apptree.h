@@ -7,7 +7,6 @@
 #ifndef APPTREE_H
 #define APPTREE_H
 
-#include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
 

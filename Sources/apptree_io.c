@@ -24,7 +24,7 @@ void apptree_io_init(int (*read_input)(char *input),
 	control.write_output = write_output;
 }
 
-/** @brief converts the number base of an integer
+/** @brief Converts the number base of an integer
  *	@param num The integer to be converted.
  *	@param base The base to be converted into.
  *	@returns Returns the result as a string format.
@@ -178,7 +178,7 @@ void apptree_print(char *format, ...)
 }
 
 /** @brief Reads a character from the binded input
- *	@input The character read.
+ *	@param input The character read.
  *	@returns Returns 0 if a new character is read and -1 if otherwise.
  */
 int apptree_read(char *input)

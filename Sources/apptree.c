@@ -8,15 +8,14 @@
 #include "apptree_io.h"
 #include "apptree.h"
 
-static void apptree_populate_picture(void);
-static int apptree_resize_picture(void);
 
 static int apptree_bind_keys(struct apptree_keybindings *key);
-static int apptree_validate_node(struct apptree_node *block);
 static int apptree_create_master(struct apptree_node **master,
 									char *title,
 									enum apptree_mode mode);
-
+									
+static void apptree_populate_picture(void);
+static int apptree_resize_picture(void);
 static void apptree_print_keybindings(void);
 static void apptree_print_info(void);
 static void apptree_print_frame(void);
@@ -26,6 +25,8 @@ static void apptree_print_select(int index);
 static void apptree_print_selected(struct apptree_node *parent,
 									int child_index);
 static void apptree_print_menu(void);
+
+static int apptree_validate_node(struct apptree_node *block);
 
 static void apptree_adjust_frame_pos(void);
 static void apptree_increase_select_pos(void);
@@ -39,10 +40,10 @@ static void apptree_handle_select_input(void);
 static void apptree_handle_back_input(void);
 static void apptree_handle_home_input(void);
 
+
 static struct apptree_control control;
 
 
-/* -------------------------------------------------------------------------- */
 /** @name Initialization Functions
  *	The initialization functions are used to initialize the configuration
  *	variables used by the apptree. It also creates a master node which
@@ -262,7 +263,7 @@ static void apptree_print_frame(void)
 		for (i = start; i < control.picture_height; i++) {
 			apptree_print_select(i);
 			apptree_print_selected(control.current, start + i);
-			apptree_print("%2x. %s\r\n", i+1, control.picture[i]);
+			apptree_print("%2d. %s\r\n", i+1, control.picture[i]);
 		}
 
 		for (j = i; j < FRAME_HEIGHT; j++)
@@ -273,7 +274,7 @@ static void apptree_print_frame(void)
 		for (i = start; i < end; i++)
 		{
 			apptree_print_select(i);
-			apptree_print("%2x. %s\r\n", i+1, control.picture[i]);
+			apptree_print("%2d. %s\r\n", i+1, control.picture[i]);
 		}
 	}
 }
